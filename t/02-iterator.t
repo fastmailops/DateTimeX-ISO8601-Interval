@@ -99,7 +99,7 @@ subtest 'until date' => sub {
 		until => DateTime->new(
 			year      => 2013,
 			month     => 2,
-			day       => 1,
+			day       => 2,
 			hour      => 1,
 			time_zone => 'America/New_York'
 		)
