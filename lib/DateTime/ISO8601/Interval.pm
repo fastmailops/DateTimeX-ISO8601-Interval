@@ -204,7 +204,8 @@ Returns a L<DateTime> object representing the end of this interval. This
 value is B<exclusive> meaning that the interval ends at exactly this time
 and does not include this point in time. For instance, an interval that
 is one hour long might begin at C<09:38:43> and end at C<10:38:43>. The
-C<10:38:43> interval is not a part of this interval.
+C<10:38:43> instant is not a part of this interval. Stated another way,
+C<$interval-E<gt>contains($interval-E<gt>end)> always returns false.
 
 This interval can be changed by providing a new L<DateTime> object as
 an argument to this method. If this interval has an explicit L</"start">
@@ -422,7 +423,7 @@ sub abbreviate {
 =method format
 
 Returns the string representation of this object.  You may optionally
-specify C<abbreviate =&gt; 1> to abbreviate the interval if possible.  For
+specify C<abbreviate =E<gt> 1> to abbreviate the interval if possible.  For
 instance, C<2013-12-01/2013-12-10> can be abbreviated to C<2013-12-01/10>.
 If the interval does not appear to be eligible for abbreviation, it will be
 returned in its full form.
@@ -615,7 +616,7 @@ as well. This is significant when parsing an interval that specifies
 only dates. For instance: C<2013-12-01/2013-12-07> should represent an
 interval lasting from C<2013-12-01> through the end of C<2013-12-07>.
 To accomplish this, the end date is adjusted by one day such that
-C<$interval-&gt;end> returns the L<DateTime> object that represents the
+C<$interval-E<gt>end> returns the L<DateTime> object that represents the
 time the interval ends: C<2013-12-08T00:00:00>
 
 =head3 Decimal representation of durations
