@@ -180,16 +180,21 @@ date specified, any existing relative L</"duration"> will be cleared.
 sub start {
 	my $self = shift;
 	my($input) = validate_pos(@_, { type => SCALAR | OBJECT, optional => 1 });
-	if($input) {
-		my $input = shift;
+
+	if($input && !ref($input)){
 		$self->{precision} = _determine_precision($input);
 		my $parser = DateTime::Format::ISO8601->new;
-		$self->{start} = $parser->parse_datetime($input);
+		$input = $parser->parse_datetime($input) or croak "invalid start date: $input";
 		if($self->{time_zone}){
-			$self->{start}->set_time_zone($self->{time_zone});
+			$input->set_time_zone($self->{time_zone});
 		}
+	}
+
+	if($input) {
+		$self->{start} = $input;
 		delete $self->{duration} if($self->{end});
 	}
+
 	return $self->{start} || ($self->{end} ? ($self->{end} - $self->{duration}) : undef);
 }
 
@@ -217,17 +222,26 @@ sub end {
 
 	my($input) = validate_pos(@_, { type => SCALAR | OBJECT, optional => 1 });
 
-	if($input) {
-		$self->{precision} = _determine_precision($input);
-		my $parser = DateTime::Format::ISO8601->new;
-		$self->{end} = $parser->parse_datetime($input);
-		if($self->{time_zone}){
-			$self->{end}->set_time_zone($self->{time_zone});
+	if($input){
+		if(!ref($input)){
+			$self->{precision} = _determine_precision($input);
+			my $parser = DateTime::Format::ISO8601->new;
+			$input = $parser->parse_datetime($input) or croak "invalid end date: $input";
+			if($self->{time_zone}){
+				$input->set_time_zone($self->{time_zone});
+			}
+		} else {
+			$self->{precision} = 'time';
 		}
+	}
+
+	if($input) {
+		$self->{end} = $input;
 		delete $self->{duration} if($self->{start});
 	}
 
 	if(my $end = $self->{end}) {
+		$end = $end->clone;
 		if($self->{precision} eq 'date') {
 			# if only specifying a date in an interval (i.e. 2013-12-01), the date/time equivalent
 			# is actually considered the full day (i.e. 2013-12-01T24:00:00)
@@ -379,8 +393,15 @@ sub contains {
 	if(!ref($date)){
 		my $parser = DateTime::Format::ISO8601->new;
 		$date = $parser->parse_datetime($date);
+		if(my $tz = $self->{time_zone}){
+			$date->set_time_zone($tz);
+		}
 	}
 	croak "Expecting a DateTime object" unless eval { $date->isa('DateTime') };
+	if($self->{time_zone} && $date->time_zone->is_floating){
+		$date = $date->clone;
+		$date->set_time_zone($self->{time_zone});
+	}
 	return $self->start <= $date && $self->end > $date;
 }
 
@@ -469,21 +490,28 @@ sub format {
 =method set_time_zone
 
 Sets the time_zone on the underlying L<DateTime> objects contained in
-this interval (see L<DateTime/set_time_zone>).
+this interval (see L<DateTime/set_time_zone>). Also stores the time zone
+in C<$self> for future use by L</contains>.
 
 =cut
 
 sub set_time_zone {
 	my $self = shift;
 	my $tz   = shift or croak "no time_zone specified";
-	if(eval { $tz->isa('DateTime::TimeZone') } || DateTime::TimeZone->is_valid_name($tz)){
-		foreach my $f(grep { exists $self->{$_} && $self->{$_} } qw(start end)){
-			$self->{$f}->set_time_zone($tz);
-		}
+	if(!eval { $tz->isa('DateTime::TimeZone') } && DateTime::TimeZone->is_valid_name($tz)){
+		$tz = DateTime::TimeZone->new( name => $tz );
+	}
+	if(!ref($tz)){
+		croak "invalid time zone: $tz";
+	}
+
+	$self->{time_zone} = $tz;
+
+	foreach my $f(grep { exists $self->{$_} && $self->{$_} } qw(start end)){
+		$self->{$f}->set_time_zone($tz);
 	}
 	return $self;
 }
-
 
 sub _timezone_offset {
 	my $self = shift;
@@ -601,7 +629,10 @@ this portion of the standard.
 
 The C<ISO 8601> standard allows for intervals to be abbreviated such
 C<2013-12-01/05> is equivalent to C<2013-12-01/2013-12-05>.  Abbreviated
-intervals should be parsed correctly but, when string-ified, they are
-always output in their
+intervals should be parsed correctly but by default, when string-ified,
+they are output in their expanded form. If you would like an abbreviated
+form (if any abbreviation is determined to be possibile) you can use
+the L</abbreviate> method. Even so, the abbreviated form is not
+guaranteed to be identical to what was provided on input.
 
 =cut
