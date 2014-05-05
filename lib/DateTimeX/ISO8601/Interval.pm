@@ -1,6 +1,6 @@
-package DateTime::ISO8601::Interval;
+package DateTimeX::ISO8601::Interval;
 
-# ABSTRACT: Fill me in.
+# ABSTRACT: Provides a means of parsing and manipulating ISO-8601 intervals and durations.
 
 use strict;
 use warnings;
@@ -101,7 +101,7 @@ sub _duration_from_matches {
 =method new
 
 The constructor takes a number of arguments and can be used instead of L</parse> to create
-a DateTime::ISO8601::Interval object.  Those arguments are:
+a DateTimeX::ISO8601::Interval object.  Those arguments are:
 
 =over 4
 
@@ -301,7 +301,7 @@ sub repeat {
 =method iterator
 
 Provides an iterator (as a code ref) that returns new
-L<DateTime::ISO8601::Interval> objects for each repitition as defined
+L<DateTimeX::ISO8601::Interval> objects for each repitition as defined
 by this interval object. Once all the intervals have been returned, the
 iterator will return C<undef> for each subsequent call.
 
@@ -313,7 +313,7 @@ A few arguments may be specified to modify the behavior of the iterator:
 call to the iterator
 
 =item * after - skip all intervals that are before this L<DateTime>
-object if this L<DateTime::ISO8601::Interval> is defined only by a
+object if this L<DateTimeX::ISO8601::Interval> is defined only by a
 duration (having neither an explicit start or end date) this parameter
 will be used as the start date.
 
@@ -328,7 +328,7 @@ returning new intervals.
 The iterator returned optionally accepts a single argument that can be used to indicate the
 number of iterations to skip on that call.  For instance:
 
-	my $monthly = DateTime::ISO8601::Interval->parse('R12/2013-01-01/P1M');
+	my $monthly = DateTimeX::ISO8601::Interval->parse('R12/2013-01-01/P1M');
 	my $iterator = $monthly->iterator;
 	while(my $month = $iterator->(2)) {
 		# $month would be Feb, Apr, Jun, etc
@@ -547,10 +547,11 @@ sub _duration_stringify {
 
 =head1 SYNOPSIS
 
-	my $interval = DateTime::ISO8601::Interval->parse("2013-12-01/15");
+	my $interval = DateTimeX::ISO8601::Interval->parse("2013-12-01/15");
 	$interval->contains('2013-12-07'); # true
+	$interval->contains('2013-12-16'); # false
 
-	my $repeating_interval = DateTime::ISO8601::Interval->parse("R12/2013-12-01/P1M");
+	my $repeating_interval = DateTimeX::ISO8601::Interval->parse("R12/2013-12-01/P1M");
 	my $iterator = $repeating_interval->iterator;
 	while(my $month_interval = $iterator->()){
 		# $month_interval is jan, feb, mar, ..., dec
@@ -628,7 +629,7 @@ this portion of the standard.
 
 =head3 Round-tripping intervals
 
-The C<ISO 8601> standard allows for intervals to be abbreviated such
+The C<ISO 8601> standard allows for intervals to be abbreviated such that
 C<2013-12-01/05> is equivalent to C<2013-12-01/2013-12-05>.  Abbreviated
 intervals should be parsed correctly but by default, when string-ified,
 they are output in their expanded form. If you would like an abbreviated
