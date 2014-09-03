@@ -1,5 +1,8 @@
 package DateTimeX::ISO8601::Interval;
-
+BEGIN {
+  $DateTimeX::ISO8601::Interval::AUTHORITY = 'cpan:ROBN';
+}
+$DateTimeX::ISO8601::Interval::VERSION = '0.003';
 # ABSTRACT: Provides a means of parsing and manipulating ISO-8601 intervals and durations.
 
 use strict;
@@ -35,13 +38,6 @@ sub _determine_precision {
 	return $date =~ m{T} ? 'time' : ($duration && !$duration->clock_duration->is_zero ? 'time' : 'date');
 }
 
-=method parse
-
-This class method will parse the first argument provided as an C<ISO 8601> formatted
-date/time interval.  All remaining arguments will be passed through to C</new>. Example
-intervals are show above in the L</SYNOPSIS> and L</DESCRIPTION>.
-
-=cut
 
 sub parse {
 	my $class    = shift;
@@ -98,31 +94,6 @@ sub _duration_from_matches {
 	return DateTime::Duration->new(%params, end_of_month => $args{end_of_month} || 'limit');
 }
 
-=method new
-
-The constructor takes a number of arguments and can be used instead of L</parse> to create
-a DateTimeX::ISO8601::Interval object.  Those arguments are:
-
-=over 4
-
-=item * start - L<DateTime> object, must be specified if C<duration> is not specified
-
-=item * end - L<DateTime> object, must be specified if C<duration> is not specified
-
-=item * duration - L<DateTime::Duration> object, must be specified if either C<start> or C<end> is missing
-
-=item * time_zone - string or L<DateTime::TimeZone> object, will be set on underlying L<DateTime>
-objects if L</start> or L</end> values must be parsed.
-
-=item * abbreviate - boolean, enable (or disable) abbreviation.  Defaults to C<0>
-
-=item * repeat - integer, specify the number of times this interval should
-be repeated. A value of C<-1> indicates an unbounded nubmer of
-repeats. Defaults to C<0>.
-
-=back
-
-=cut
 
 sub new {
 	my $class = shift;
@@ -163,19 +134,6 @@ sub new {
 	return bless \%args, $class;
 }
 
-=method start
-
-Returns a L<DateTime> object representing the beginning of this
-interval. B<Note:> if the interval doesn't include a time component,
-the start time will actually be C<00:00:00.000> of the following day
-(since the interval covers the entire day). Intervals B<include> the
-C<start> value (in contrast to the C<end> value).
-
-This interval can be changed by providing a new L<DateTime> object as
-an argument to this method. If this interval has an explicit L</"end">
-date specified, any existing relative L</"duration"> will be cleared.
-
-=cut
 
 sub start {
 	my $self = shift;
@@ -198,25 +156,6 @@ sub start {
 	return $self->{start} || ($self->{end} ? ($self->{end} - $self->{duration}) : undef);
 }
 
-=method end
-
-Returns a L<DateTime> object representing the end of this interval. This
-value is B<exclusive> meaning that the interval ends at exactly this time
-and does not include this point in time. For instance, an interval that
-is one hour long might begin at C<09:38:43> and end at C<10:38:43>. The
-C<10:38:43> instant is not a part of this interval. Stated another way,
-C<$interval-E<gt>contains($interval-E<gt>end)> always returns false.
-
-This interval can be changed by providing a new L<DateTime> object as
-an argument to this method. If this interval has an explicit L</"start">
-date specified, any existing relative L</"duration"> will be cleared.
-
-B<Note:> if the interval doesn't include a time component, the end
-time will actually be C<00:00:00.000> of the following day (since the
-interval covers the entire day). If L<DateTime> supported a time of day
-like C<24:00:00.000> that would be used instead.
-
-=cut
 
 sub end {
 	my $self = shift;
@@ -254,11 +193,6 @@ sub end {
 	}
 }
 
-=method duration
-
-Returns a L<DateTime::Duration> object representing this interval.
-
-=cut
 
 sub duration {
 	my $self = shift;
@@ -278,14 +212,6 @@ sub duration {
 	return $dur;
 }
 
-=method repeat
-
-Returns the number of times this interval should repeat. This value
-can be changed by providing a new value.  A C<repeat> value of C<0>
-means that the interval is not repeated. A C<repeat> value of C<-1>
-means that the interval should be repeated indefinitely.
-
-=cut
 
 sub repeat {
 	my $self = shift;
@@ -298,43 +224,6 @@ sub repeat {
 	return $self->{repeat};
 }
 
-=method iterator
-
-Provides an iterator (as a code ref) that returns new
-L<DateTimeX::ISO8601::Interval> objects for each repitition as defined
-by this interval object. Once all the intervals have been returned, the
-iterator will return C<undef> for each subsequent call.
-
-A few arguments may be specified to modify the behavior of the iterator:
-
-=over 4
-
-=item * skip - specify the number of intervals to skip for the first
-call to the iterator
-
-=item * after - skip all intervals that are before this L<DateTime>
-object if this L<DateTimeX::ISO8601::Interval> is defined only by a
-duration (having neither an explicit start or end date) this parameter
-will be used as the start date.
-
-=item * until - specify a specific L<DateTime> to stop returning new
-intervals.  Similar to L</end>, this attribute is B<exclusive>.  That is,
-once the iterator reaches a point where the interval being returned
-L</contains> this value, an C<undef> is returned and the iterator stops
-returning new intervals.
-
-=back
-
-The iterator returned optionally accepts a single argument that can be used to indicate the
-number of iterations to skip on that call.  For instance:
-
-	my $monthly = DateTimeX::ISO8601::Interval->parse('R12/2013-01-01/P1M');
-	my $iterator = $monthly->iterator;
-	while(my $month = $iterator->(2)) {
-		# $month would be Feb, Apr, Jun, etc
-	}
-
-=cut
 
 sub iterator {
 	my $self = shift;
@@ -378,13 +267,6 @@ sub iterator {
 	};
 }
 
-=method contains
-
-Returns a boolean indicating whether the provided date (either an C<ISO
-8601> formatted string or a L<DateTime> object) is between the L</"start">
-or L</"end"> dates as defined by this interval.
-
-=cut
 
 sub contains {
 	my $self = shift;
@@ -406,13 +288,6 @@ sub contains {
 	return $self->start <= $date && $self->end > $date;
 }
 
-=method abbreviate
-
-Enables abbreviated formatting where duplicate portions of the interval
-are eliminated in the second half of the formatted string. To disable,
-call C<$interval->abbreviate(0)>.  See the L</format> method for more information
-
-=cut
 
 sub abbreviate {
 	my $self = shift;
@@ -420,15 +295,6 @@ sub abbreviate {
 	return $self;
 }
 
-=method format
-
-Returns the string representation of this object.  You may optionally
-specify C<abbreviate =E<gt> 1> to abbreviate the interval if possible.  For
-instance, C<2013-12-01/2013-12-10> can be abbreviated to C<2013-12-01/10>.
-If the interval does not appear to be eligible for abbreviation, it will be
-returned in its full form.
-
-=cut
 
 sub format {
 	my $self = shift;
@@ -488,13 +354,6 @@ sub format {
 	return join '/', @interval;
 }
 
-=method set_time_zone
-
-Sets the time_zone on the underlying L<DateTime> objects contained in
-this interval (see L<DateTime/set_time_zone>). Also stores the time zone
-in C<$self> for future use by L</contains>.
-
-=cut
 
 sub set_time_zone {
 	my $self = shift;
@@ -545,6 +404,20 @@ sub _duration_stringify {
 
 1;
 
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+DateTimeX::ISO8601::Interval - Provides a means of parsing and manipulating ISO-8601 intervals and durations.
+
+=head1 VERSION
+
+version 0.003
+
 =head1 SYNOPSIS
 
 	my $interval = DateTimeX::ISO8601::Interval->parse("2013-12-01/15");
@@ -585,6 +458,141 @@ Duration and end, such as "P1Y2M10DT2H30M/2008-05-11T15:30:00Z"
 Duration only, such as "P1Y2M10DT2H30M", with additional context information
 
 =back
+
+=head1 METHODS
+
+=head2 parse
+
+This class method will parse the first argument provided as an C<ISO 8601> formatted
+date/time interval.  All remaining arguments will be passed through to C</new>. Example
+intervals are show above in the L</SYNOPSIS> and L</DESCRIPTION>.
+
+=head2 new
+
+The constructor takes a number of arguments and can be used instead of L</parse> to create
+a DateTimeX::ISO8601::Interval object.  Those arguments are:
+
+=over 4
+
+=item * start - L<DateTime> object, must be specified if C<duration> is not specified
+
+=item * end - L<DateTime> object, must be specified if C<duration> is not specified
+
+=item * duration - L<DateTime::Duration> object, must be specified if either C<start> or C<end> is missing
+
+=item * time_zone - string or L<DateTime::TimeZone> object, will be set on underlying L<DateTime>
+objects if L</start> or L</end> values must be parsed.
+
+=item * abbreviate - boolean, enable (or disable) abbreviation.  Defaults to C<0>
+
+=item * repeat - integer, specify the number of times this interval should
+be repeated. A value of C<-1> indicates an unbounded nubmer of
+repeats. Defaults to C<0>.
+
+=back
+
+=head2 start
+
+Returns a L<DateTime> object representing the beginning of this
+interval. B<Note:> if the interval doesn't include a time component,
+the start time will actually be C<00:00:00.000> of the following day
+(since the interval covers the entire day). Intervals B<include> the
+C<start> value (in contrast to the C<end> value).
+
+This interval can be changed by providing a new L<DateTime> object as
+an argument to this method. If this interval has an explicit L</"end">
+date specified, any existing relative L</"duration"> will be cleared.
+
+=head2 end
+
+Returns a L<DateTime> object representing the end of this interval. This
+value is B<exclusive> meaning that the interval ends at exactly this time
+and does not include this point in time. For instance, an interval that
+is one hour long might begin at C<09:38:43> and end at C<10:38:43>. The
+C<10:38:43> instant is not a part of this interval. Stated another way,
+C<$interval-E<gt>contains($interval-E<gt>end)> always returns false.
+
+This interval can be changed by providing a new L<DateTime> object as
+an argument to this method. If this interval has an explicit L</"start">
+date specified, any existing relative L</"duration"> will be cleared.
+
+B<Note:> if the interval doesn't include a time component, the end
+time will actually be C<00:00:00.000> of the following day (since the
+interval covers the entire day). If L<DateTime> supported a time of day
+like C<24:00:00.000> that would be used instead.
+
+=head2 duration
+
+Returns a L<DateTime::Duration> object representing this interval.
+
+=head2 repeat
+
+Returns the number of times this interval should repeat. This value
+can be changed by providing a new value.  A C<repeat> value of C<0>
+means that the interval is not repeated. A C<repeat> value of C<-1>
+means that the interval should be repeated indefinitely.
+
+=head2 iterator
+
+Provides an iterator (as a code ref) that returns new
+L<DateTimeX::ISO8601::Interval> objects for each repitition as defined
+by this interval object. Once all the intervals have been returned, the
+iterator will return C<undef> for each subsequent call.
+
+A few arguments may be specified to modify the behavior of the iterator:
+
+=over 4
+
+=item * skip - specify the number of intervals to skip for the first
+call to the iterator
+
+=item * after - skip all intervals that are before this L<DateTime>
+object if this L<DateTimeX::ISO8601::Interval> is defined only by a
+duration (having neither an explicit start or end date) this parameter
+will be used as the start date.
+
+=item * until - specify a specific L<DateTime> to stop returning new
+intervals.  Similar to L</end>, this attribute is B<exclusive>.  That is,
+once the iterator reaches a point where the interval being returned
+L</contains> this value, an C<undef> is returned and the iterator stops
+returning new intervals.
+
+=back
+
+The iterator returned optionally accepts a single argument that can be used to indicate the
+number of iterations to skip on that call.  For instance:
+
+	my $monthly = DateTimeX::ISO8601::Interval->parse('R12/2013-01-01/P1M');
+	my $iterator = $monthly->iterator;
+	while(my $month = $iterator->(2)) {
+		# $month would be Feb, Apr, Jun, etc
+	}
+
+=head2 contains
+
+Returns a boolean indicating whether the provided date (either an C<ISO
+8601> formatted string or a L<DateTime> object) is between the L</"start">
+or L</"end"> dates as defined by this interval.
+
+=head2 abbreviate
+
+Enables abbreviated formatting where duplicate portions of the interval
+are eliminated in the second half of the formatted string. To disable,
+call C<$interval->abbreviate(0)>.  See the L</format> method for more information
+
+=head2 format
+
+Returns the string representation of this object.  You may optionally
+specify C<abbreviate =E<gt> 1> to abbreviate the interval if possible.  For
+instance, C<2013-12-01/2013-12-10> can be abbreviated to C<2013-12-01/10>.
+If the interval does not appear to be eligible for abbreviation, it will be
+returned in its full form.
+
+=head2 set_time_zone
+
+Sets the time_zone on the underlying L<DateTime> objects contained in
+this interval (see L<DateTime/set_time_zone>). Also stores the time zone
+in C<$self> for future use by L</contains>.
 
 =head1 CAVEATS
 
@@ -636,5 +644,16 @@ they are output in their expanded form. If you would like an abbreviated
 form (if any abbreviation is determined to be possibile) you can use
 the L</abbreviate> method. Even so, the abbreviated form is not
 guaranteed to be identical to what was provided on input.
+
+=head1 AUTHOR
+
+Brian Phillips <bphillips@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2013 by Brian Phillips and Shutterstock, Inc.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut

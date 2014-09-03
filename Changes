@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for DateTime-ISO8601-Interval
 
-{{$NEXT}}
+0.003     2014-09-03 13:52:48+10:00 Australia/Melbourne
 
 0.002     2014-01-02 16:47:52 CST6CDT
   - ignore local cpanm repo from distribution :(
